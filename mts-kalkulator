@@ -1,0 +1,137 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+const DigitalTriageCalculator = () => {
+  const [patientsPerDay, setPatientsPerDay] = useState(30);
+  const [manualTTATime, setManualTTATime] = useState(305);
+  const [manualMTSTime, setManualMTSTime] = useState(710);
+  const [chartData, setChartData] = useState([]);
+
+  const workingDaysPerYear = 365;
+  const digitalTTATime = 243; // Fast tid for digital TTA
+  const digitalMTSTime = 520; // Fast tid for digital MTS
+
+  const setLarvikStudyValues = () => {
+    setPatientsPerDay(30);
+    setManualTTATime(305);
+    setManualMTSTime(710);
+  };
+
+  useEffect(() => {
+    const annualPatients = patientsPerDay * workingDaysPerYear;
+    const ttaTimeSaved = (manualTTATime - digitalTTATime) * annualPatients;
+    const mtsTimeSaved = (manualMTSTime - digitalMTSTime) * annualPatients;
+    const ttaEfficiencyImprovement = ((manualTTATime - digitalTTATime) / manualTTATime * 100).toFixed(2);
+    const mtsEfficiencyImprovement = ((manualMTSTime - digitalMTSTime) / manualMTSTime * 100).toFixed(2);
+
+    setChartData([
+      { name: 'TTA', Manuell: manualTTATime, Digital: digitalTTATime, Forbedring: Number(ttaEfficiencyImprovement) },
+      { name: 'MTS', Manuell: manualMTSTime, Digital: digitalMTSTime, Forbedring: Number(mtsEfficiencyImprovement) },
+    ]);
+  }, [patientsPerDay, manualTTATime, manualMTSTime]);
+
+  const annualTimeSaved = ((manualTTATime - digitalTTATime) + (manualMTSTime - digitalMTSTime)) * patientsPerDay * workingDaysPerYear;
+
+  return (
+    <Card className="w-full max-w-4xl mx-auto bg-gray-50 shadow-lg">
+      <CardHeader className="bg-blue-600 text-white">
+        <CardTitle className="text-2xl font-bold">Årlig Digital Triage Effektivitetskalkulator</CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <div className="space-y-6">
+          <div>
+            <Label htmlFor="patients" className="text-lg font-semibold">Pasienter pr. døgn: {patientsPerDay}</Label>
+            <Slider
+              id="patients"
+              min={1}
+              max={500}
+              step={1}
+              value={[patientsPerDay]}
+              onValueChange={(value) => setPatientsPerDay(value[0])}
+              className="mt-2"
+            />
+          </div>
+          <div>
+            <Label htmlFor="manualTTATime" className="font-medium">Manuell TTA tid (sek): {manualTTATime}</Label>
+            <Slider
+              id="manualTTATime"
+              min={digitalTTATime}
+              max={600}
+              step={1}
+              value={[manualTTATime]}
+              onValueChange={(value) => setManualTTATime(value[0])}
+              className="mt-2"
+            />
+          </div>
+          <div>
+            <Label htmlFor="manualMTSTime" className="font-medium">Manuell MTS tid (sek): {manualMTSTime}</Label>
+            <Slider
+              id="manualMTSTime"
+              min={digitalMTSTime}
+              max={1000}
+              step={1}
+              value={[manualMTSTime]}
+              onValueChange={(value) => setManualMTSTime(value[0])}
+              className="mt-2"
+            />
+          </div>
+          <div>
+            <p className="text-lg font-medium">Digital TTA tid (fast): {digitalTTATime} sek</p>
+            <p className="text-lg font-medium mt-2">Digital MTS tid (fast): {digitalMTSTime} sek</p>
+          </div>
+          <Button 
+            onClick={setLarvikStudyValues} 
+            className="w-full py-6 text-lg font-semibold bg-green-500 hover:bg-green-600 text-white"
+          >
+            Trykk her for å sette verdiene til resultatet fra tidsstudien på Larvik Legevakt
+          </Button>
+        </div>
+        <div className="mt-8 bg-white p-4 rounded-lg shadow">
+          <h3 className="text-xl font-bold mb-4 text-blue-600">Årlige Resultater:</h3>
+          <p className="text-lg mb-2">Total tid spart: <span className="font-semibold">{(annualTimeSaved / 3600).toFixed(2)} timer</span></p>
+          <p className="text-lg mb-2">TTA effektivitetsforbedring: <span className="font-semibold">{((manualTTATime - digitalTTATime) / manualTTATime * 100).toFixed(2)}%</span></p>
+          <p className="text-lg mb-2">MTS effektivitetsforbedring: <span className="font-semibold">{((manualMTSTime - digitalMTSTime) / manualMTSTime * 100).toFixed(2)}%</span></p>
+        </div>
+        <div className="mt-8 bg-white p-4 rounded-lg shadow">
+          <h3 className="text-xl font-bold mb-4 text-blue-600">Tidssammenligning og Effektivitetsforbedring</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData}>
+              <XAxis dataKey="name" />
+              <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+              <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+              <Tooltip />
+              <Legend />
+              <Bar yAxisId="left" dataKey="Manuell" fill="#8884d8" name="Manuell tid (sek)" />
+              <Bar yAxisId="left" dataKey="Digital" fill="#82ca9d" name="Digital tid (sek)" />
+              <Bar yAxisId="right" dataKey="Forbedring" fill="#ffc658" name="Forbedring (%)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+      <CardFooter className="bg-gray-100 p-6 mt-8 rounded-b-lg">
+        <div className="text-sm text-gray-700">
+          <h4 className="font-bold mb-2">Hovedkonklusjon fra tidsstudien på Larvik Legevakt:</h4>
+          <p className="mb-4">
+            Studien viste at implementeringen av digital triage på Larvik Legevakt resulterte i betydelige tidsbesparelser og effektivitetsforbedringer. For TTA (Telefon Triage og Advice) ble tiden redusert fra 305 til 243 sekunder, en forbedring på 20.3%. For MTS (Manchester Triage System) ble tiden redusert fra 710 til 520 sekunder, en forbedring på 26.8%. Disse forbedringene førte til raskere pasientvurderinger, reduserte ventetider, og potensielt bedre pasientbehandling.
+          </p>
+          <h5 className="font-semibold mb-2">Nøyaktighet i triagering:</h5>
+          <ul className="list-disc pl-5 mb-4">
+            <li>Manuell TTA triage: 90% nøyaktighet i hastegradsvurdering, 80% dokumentasjonsnøyaktighet</li>
+            <li>Digital TTA triage: 97% nøyaktighet i hastegradsvurdering, 96% dokumentasjonsnøyaktighet</li>
+            <li>Manuell MTS triage: 92% nøyaktighet i hastegradsvurdering, 82% dokumentasjonsnøyaktighet</li>
+            <li>Digital MTS triage: 96% nøyaktighet i hastegradsvurdering, 98% dokumentasjonsnøyaktighet</li>
+          </ul>
+          <p>
+            Disse resultatene viser at digital triage ikke bare sparer tid, men også forbedrer nøyaktigheten i både hastegradsvurdering og dokumentasjon. Den økte nøyaktigheten kan tilskrives verktøyets innebygde kvalitetssikring og støtte, som reduserer behovet for manuelle oppslag og minimerer menneskelige feil. Studien understreker viktigheten av digitale verktøy i moderne akuttmedisin for å optimalisere ressursbruk, forbedre pasientopplevelsen, og potensielt forbedre pasientsikkerheten gjennom mer nøyaktige vurderinger.
+          </p>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default DigitalTriageCalculator;
